@@ -1,0 +1,56 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+/coverage/
+tarpaulin-report.html
+
+# Configuration files with credentials
+config.json
+*.config
+.env
+.env.local
+.env.production
+.env.staging
+config.toml
+comfy-fs.conf
+
+# Build artifacts
+/dist/
+/build/
+
+# Test artifacts
+test_*.txt
+test_output/
+fixtures/private/
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+temp/
+.temp/
+
+# Personal notes and docs
+notes.md
+TODO.md
+NOTES.txt
+
+# Logs
+*.log
+logs/

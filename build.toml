@@ -1,0 +1,34 @@
+# Cross-platform build configuration for comfy-fs
+
+[targets]
+# Primary platforms
+linux-x86_64 = "x86_64-unknown-linux-gnu"
+linux-musl = "x86_64-unknown-linux-musl"
+windows = "x86_64-pc-windows-gnu"
+macos-intel = "x86_64-apple-darwin"
+macos-arm = "aarch64-apple-darwin"
+
+# Secondary platforms
+linux-arm64 = "aarch64-unknown-linux-gnu"
+windows-arm = "aarch64-pc-windows-msvc"
+
+[build-options]
+# Optimization level for release builds
+opt-level = 3
+# Enable LTO for smaller binaries
+lto = true
+# Strip debug symbols for release
+strip = true
+# Enable panic = abort for smaller binaries
+panic = "abort"
+
+[dependencies]
+# Required system packages for each platform
+[dependencies.linux]
+samba-client = "smbclient package required for SMB support"
+
+[dependencies.windows]
+note = "SMB support built into Windows"
+
+[dependencies.macos]
+samba = "Install via: brew install samba"
