@@ -2,13 +2,15 @@
 
 A high-performance, user-friendly command-line interface for the company file server. Built with Rust for maximum performance and reliability, designed to be accessible to both technical and non-technical users.
 
+![alt text](../screenshot.png)
+
 ## Features
 
 - **Multi-Protocol Support**: SMB and FTP with automatic fallback
 - **Parallel Downloads**: High-speed concurrent file transfers
 - **Interactive TUI**: Beautiful terminal interface for file browsing
 - **Wildcard Support**: Download multiple files with patterns (`*.pdf`, `test*`, etc.)
-- **Bidirectional Sync**: Keep local and remote directories synchronized  
+- **Bidirectional Sync**: Keep local and remote directories synchronized
 - **Progress Bars**: Real-time transfer progress visualization
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Comprehensive Testing**: 45+ unit and integration tests
@@ -55,6 +57,7 @@ Preferred protocol (1=SMB, 2=FTP) [default: 1]: 1
 ```
 
 To reconfigure later, run:
+
 ```bash
 comfy-fs config
 ```
@@ -64,18 +67,21 @@ comfy-fs config
 ### Basic Commands
 
 **List files on the server:**
+
 ```bash
 comfy-fs list /
 comfy-fs list /documents --sort name --reverse
 ```
 
 **Browse files interactively:**
+
 ```bash
 comfy-fs browse
 comfy-fs browse /documents
 ```
 
 **Download files:**
+
 ```bash
 # Single file
 comfy-fs download /path/to/file.pdf ./downloads/
@@ -86,6 +92,7 @@ comfy-fs download "/reports/2024*" ./reports/
 ```
 
 **Upload files:**
+
 ```bash
 # Single file
 comfy-fs upload document.pdf --dest /documents/
@@ -95,12 +102,14 @@ comfy-fs upload *.jpg report.pdf --dest /uploads/
 ```
 
 **Synchronize directories:**
+
 ```bash
 # Two-way sync between local and remote
 comfy-fs sync ./local-folder /remote-folder
 ```
 
 **Interactive mode:**
+
 ```bash
 comfy-fs interactive
 # or just
@@ -110,11 +119,13 @@ comfy-fs
 ### Advanced Usage
 
 **Configure different servers:**
+
 ```bash
 comfy-fs config --server 192.168.1.200 --username user2
 ```
 
 **Sort file listings:**
+
 ```bash
 comfy-fs list / --sort modified     # by date (default)
 comfy-fs list / --sort name         # alphabetically
@@ -124,6 +135,7 @@ comfy-fs list / --reverse           # reverse sort order
 ```
 
 **Wildcard patterns:**
+
 - `*` - matches everything
 - `*.ext` - files with specific extension
 - `prefix*` - files starting with prefix
@@ -214,6 +226,7 @@ cargo test -- --nocapture
 ## Configuration
 
 Configuration is stored in your system's config directory:
+
 - **Linux**: `~/.config/comfy-fs/config.json`
 - **macOS**: `~/Library/Application Support/com.comfy.comfy-fs/config.json`
 - **Windows**: `%APPDATA%\comfy\comfy-fs\config.json`
@@ -240,6 +253,7 @@ Note: Passwords are not stored in the config file for security reasons.
 ### Benchmarks
 
 On a 2.5GbE connection:
+
 - Single file download: ~250MB/s
 - Parallel downloads: ~240MB/s aggregate
 - File listing: <100ms for 1000 files
@@ -290,6 +304,7 @@ comfy-fs config
 ### Code Quality
 
 All contributions must:
+
 - Pass all existing tests
 - Include tests for new functionality
 - Follow Rust formatting standards (`rustfmt`)
@@ -317,6 +332,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For issues, feature requests, or questions:
+
 1. Check the [troubleshooting section](#troubleshooting)
 2. Review existing [GitHub Issues](../../issues)
 3. Create a new issue with detailed information
