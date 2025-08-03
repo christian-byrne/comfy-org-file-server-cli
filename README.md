@@ -2,7 +2,7 @@
 
 A high-performance, user-friendly command-line interface for the company file server. Built with Rust for maximum performance and reliability, designed to be accessible to both technical and non-technical users.
 
-![alt text](../screenshot.png)
+![alt text](screenshot.png)
 
 ## Features
 
