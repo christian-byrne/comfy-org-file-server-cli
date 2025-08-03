@@ -46,8 +46,8 @@ For detailed setup instructions, visit:
 
 Let's configure your connection settings:
 
-Server IP address: 192.168.8.156
-Username: comfy
+Server IP address: 192.168.1.100
+Username: myusername
 Password: ****
 Preferred protocol (1=SMB, 2=FTP) [default: 1]: 1
 
@@ -111,7 +111,7 @@ comfy-fs
 
 **Configure different servers:**
 ```bash
-comfy-fs config --server 192.168.1.100 --username user2
+comfy-fs config --server 192.168.1.200 --username user2
 ```
 
 **Sort file listings:**
@@ -222,8 +222,8 @@ Configuration is stored in your system's config directory:
 
 ```json
 {
-  "server_ip": "192.168.8.156",
-  "username": "comfy",
+  "server_ip": "192.168.1.100",
+  "username": "myusername",
   "default_protocol": "Ftp"
 }
 ```
