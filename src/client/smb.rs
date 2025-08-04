@@ -55,27 +55,45 @@ impl SmbClient {
 
     fn parse_list_line(&self, line: &str, base_path: &str) -> Option<RemoteFile> {
         // Parse smbclient ls output format:
-        // filename    A    1234  Wed Dec 25 10:30:45 2024
-        let parts: Vec<&str> = line.trim().split_whitespace().collect();
+        //   filename                          D        0  Wed Dec 25 10:30:45 2024
+        //   filename                         AH     1234  Wed Dec 25 10:30:45 2024
         
-        if parts.len() < 6 {
+        // Skip empty lines and the disk space summary line
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.contains("blocks of size") {
             return None;
         }
         
-        let name = parts[0];
+        // SMB output has fixed-width columns, need to parse more carefully
+        // First 35 chars are filename (padded), then attributes, size, date
+        
+        if line.len() < 36 {
+            return None;
+        }
+        
+        // Extract filename (first 35 chars, trimmed)
+        let name = line[..35].trim();
         
         // Skip current and parent directory entries
         if name == "." || name == ".." {
             return None;
         }
         
-        let attributes = parts[1];
+        // Rest of the line contains attributes, size, and date
+        let rest = line[35..].trim();
+        let parts: Vec<&str> = rest.split_whitespace().collect();
+        
+        if parts.is_empty() {
+            return None;
+        }
+        
+        let attributes = parts[0];
         let is_dir = attributes.contains('D');
         
-        let size = if is_dir {
-            0
+        let size = if parts.len() > 1 && !is_dir {
+            parts[1].parse::<u64>().unwrap_or(0)
         } else {
-            parts[2].parse::<u64>().unwrap_or(0)
+            0
         };
         
         // Parse date - simplified approach
@@ -258,7 +276,7 @@ mod tests {
         );
         
         // Test directory entry
-        let dir_line = "Documents    D        0  Wed Dec 25 10:30:45 2024";
+        let dir_line = "  Documents                         D        0  Wed Dec 25 10:30:45 2024";
         let result = client.parse_list_line(dir_line, "/");
         assert!(result.is_some());
         let entry = result.unwrap();
@@ -267,7 +285,7 @@ mod tests {
         assert_eq!(entry.size, 0);
         
         // Test file entry
-        let file_line = "report.pdf   A     1024  Wed Dec 25 10:30:45 2024";
+        let file_line = "  report.pdf                        A     1024  Wed Dec 25 10:30:45 2024";
         let result = client.parse_list_line(file_line, "/docs");
         assert!(result.is_some());
         let entry = result.unwrap();

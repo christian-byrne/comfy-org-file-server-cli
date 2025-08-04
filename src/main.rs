@@ -34,7 +34,7 @@ fn ensure_password(config: &mut Config) -> Result<()> {
     if config.password.is_none() {
         use std::io::Write;
         
-        print!("Password: ");
+        print!("Password (hidden - you won't see it when you type): ");
         std::io::stdout().flush()?;
         
         // Try to read password securely, fallback to regular input if needed

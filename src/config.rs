@@ -28,7 +28,7 @@ impl Default for Config {
             server_ip: String::new(),
             username: String::new(),
             password: None,
-            default_protocol: Protocol::Ftp,
+            default_protocol: Protocol::Smb,
             configured: false,
         }
     }
@@ -89,7 +89,7 @@ impl Config {
         self.username = username.trim().to_string();
 
         // Get password with hidden input
-        self.password = Some(rpassword::prompt_password("Password: ").unwrap_or_default());
+        self.password = Some(rpassword::prompt_password("Password (hidden - you won't see it when you type): ").unwrap_or_default());
 
         // Get preferred protocol
         print!("\nPreferred protocol (1=SMB, 2=FTP) [default: 1]: ");
@@ -160,13 +160,14 @@ mod tests {
         assert!(json.contains("testuser"));
         assert!(!json.contains("testpass")); // Password should be skipped
         assert!(json.contains("Smb"));
+        assert!(json.contains("true"));
 
         let decoded: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.server_ip, "10.0.0.1");
         assert_eq!(decoded.username, "testuser");
         assert_eq!(decoded.password, None); // Password not serialized
         assert_eq!(decoded.default_protocol, Protocol::Smb);
-        assert_eq!(decoded.configured, true);
+        assert!(decoded.configured);
     }
 
     #[test]

@@ -64,6 +64,7 @@ pub struct FileBrowser {
     list_state: ListState,
     selected_files: Vec<String>,
     client: Arc<Mutex<Box<dyn FileServerClient>>>,
+    download_status: Option<String>,
 }
 
 impl FileBrowser {
@@ -77,13 +78,14 @@ impl FileBrowser {
             list_state: ListState::default(),
             selected_files: Vec::new(),
             client,
+            download_status: None,
         }
     }
 
     #[allow(clippy::future_not_send)]
     pub async fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<()> {
         // Load initial directory
-        self.load_directory()?;
+        self.load_directory().await?;
 
         loop {
             terminal.draw(|f| self.render(f))?;
@@ -104,13 +106,24 @@ impl FileBrowser {
     }
 
     fn render(&mut self, frame: &mut Frame) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
+        let constraints = if self.download_status.is_some() {
+            vec![
+                Constraint::Length(3), // Header
+                Constraint::Min(10),   // File list
+                Constraint::Length(3), // Download status
+                Constraint::Length(3), // Status bar
+            ]
+        } else {
+            vec![
                 Constraint::Length(3), // Header
                 Constraint::Min(10),   // File list
                 Constraint::Length(3), // Status bar
-            ])
+            ]
+        };
+        
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(constraints)
             .split(frame.area());
 
         // Header
@@ -187,15 +200,36 @@ impl FileBrowser {
         self.list_state.select(Some(self.selected));
         frame.render_stateful_widget(files_list, chunks[1], &mut self.list_state);
 
-        // Status bar
-        let status = Paragraph::new(Line::from(vec![Span::raw(
-            "↑↓: Navigate | Enter: Open/Download | Space: Select | s: Sort | r: Reverse | q: Quit",
-        )]))
-        .block(Block::default().borders(Borders::ALL));
-        frame.render_widget(status, chunks[2]);
+        // Download status (if any)
+        if let Some(status) = &self.download_status {
+            let download_status = Paragraph::new(Line::from(vec![
+                Span::styled(status, Style::default().fg(Color::Yellow))
+            ]))
+            .block(Block::default().borders(Borders::ALL).title("Status"));
+            frame.render_widget(download_status, chunks[2]);
+            
+            // Status bar is now at index 3
+            let status = Paragraph::new(Line::from(vec![Span::raw(
+                "↑↓: Navigate | Enter: Open/Download | Backspace: Go Up | Space: Select | s: Sort | r: Reverse | q: Quit",
+            )]))
+            .block(Block::default().borders(Borders::ALL));
+            frame.render_widget(status, chunks[3]);
+        } else {
+            // Status bar at index 2 when no download status
+            let status = Paragraph::new(Line::from(vec![Span::raw(
+                "↑↓: Navigate | Enter: Open/Download | Backspace: Go Up | Space: Select | s: Sort | r: Reverse | q: Quit",
+            )]))
+            .block(Block::default().borders(Borders::ALL));
+            frame.render_widget(status, chunks[2]);
+        }
     }
 
     async fn handle_input(&mut self, key: KeyEvent) -> Result<bool> {
+        // Clear download status on any key press
+        if self.download_status.is_some() {
+            self.download_status = None;
+        }
+        
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => return Ok(false),
             KeyCode::Up => self.move_selection(-1),
@@ -226,10 +260,38 @@ impl FileBrowser {
             if entry.is_dir {
                 self.current_path = entry.path.clone();
                 self.selected = 0;
-                self.load_directory()?;
+                self.load_directory().await?;
             } else {
-                // TODO: Implement download
-                println!("Download: {}", entry.path);
+                // Download file to current directory
+                let filename = entry.name.clone();
+                let remote_path = entry.path.clone();
+                let local_path = std::path::PathBuf::from(&filename);
+                
+                // Show download starting status with file size
+                let size_str = format_bytes(entry.size);
+                self.download_status = Some(format!("⏳ Downloading {} ({})... Please wait, UI will be unresponsive", filename, size_str));
+                
+                // Force a render to show the status immediately
+                // Note: Download will still block the UI, but at least user sees what's happening
+                
+                let client = self.client.clone();
+                let mut client_guard = client.lock().await;
+                let start_time = std::time::Instant::now();
+                
+                match client_guard.download_file(&remote_path, &local_path).await {
+                    Ok(_) => {
+                        let elapsed = start_time.elapsed();
+                        self.download_status = Some(format!(
+                            "✓ Downloaded {} to current directory ({:.1}s)", 
+                            filename, 
+                            elapsed.as_secs_f64()
+                        ));
+                    }
+                    Err(e) => {
+                        self.download_status = Some(format!("✗ Download failed: {}", e));
+                    }
+                }
+                drop(client_guard);
             }
         }
         Ok(())
@@ -260,22 +322,19 @@ impl FileBrowser {
             if let Some(parent) = PathBuf::from(&self.current_path).parent() {
                 self.current_path = parent.to_string_lossy().to_string();
                 self.selected = 0;
-                self.load_directory()?;
+                self.load_directory().await?;
             }
         }
         Ok(())
     }
 
-    fn load_directory(&mut self) -> Result<()> {
+    async fn load_directory(&mut self) -> Result<()> {
         // Load files from server
         let client = self.client.clone();
         let path = self.current_path.clone();
         
-        let rt = tokio::runtime::Handle::current();
-        let remote_files = rt.block_on(async {
-            let mut client_guard = client.lock().await;
-            client_guard.list_files(&path).await
-        })?;
+        let mut client_guard = client.lock().await;
+        let remote_files = client_guard.list_files(&path).await?;
 
         // Convert RemoteFile to FileEntry
         self.entries = remote_files
